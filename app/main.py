@@ -1,10 +1,17 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Depends
 from fastapi.params import Body
 from random import randrange
-from .models import Post, curs, conn
-from .script import my_posts, find_post, find_index_post
+from .models import Post
+from . import models
+from .database import engine, SessionLocal, get_db
+from sqlalchemy.orm import Session
+from .schema import PostBase
+from .schema import CreatePost
+from typing import List
 
 app = FastAPI()
+
+models.Base.metadata.create_all(bind=engine)
 
 
 @app.get("/")
@@ -12,50 +19,56 @@ async def root():
     return {"message": "Hello World"}
 
 
-@app.get("/posts")
-def get_posts():
-    curs.execute("""SELECT * FROM posts """)
-    posts = curs.fetchall()
-    return {"data": posts}
+@app.get("/posts", response_model=List[PostBase])
+def get_posts(db: Session = Depends(get_db)):
+    posts = db.query(models.Post).all()
+    return posts
 
 
-@app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_post(post: Post):
-    curs.execute(
-        """INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, (post.title, post.content, post.published))
-    conn.commit()
-    return {"data": "created post"}
+@app.post("/posts", status_code=status.HTTP_201_CREATED, response_model=List[CreatePost])
+def create_post(post: CreatePost, db: Session = Depends(get_db)):
+    # new_post = models.Post(
+    #     title=post.title, content=post.content)
+    new_post = models.Post(**post.model_dump())
+    db.add(new_post)
+    db.commit()
+    db.refresh(new_post)
+    return [new_post]
 
 
-@app.get("/posts/{id}")
-def get_post(id: int):
-    curs.execute("""SELECT * FROM posts WHERE id = %s """, (str(id)))
-    post = curs.fetchone()
+@app.get("/posts/{id}", status_code=status.HTTP_200_OK, response_model=PostBase)
+def get_post(id: int, db: Session = Depends(get_db)):
+    post = db.query(models.Post).filter(models.Post.id == id).first()
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Post with id {id} not found")
-    return {"post details": post}
+    return post
 
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int):
-    curs.execute("""DELETE FROM posts WHERE id = %s RETURNING *""", (str(id)))
-    deleted_post = curs.fetchone()
-    conn.commit()
-    if not deleted_post:
+def delete_post(id: int, db: Session = Depends(get_db)):
+    deleted_post = db.query(models.Post).filter(models.Post.id == id)
+    if not deleted_post.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Post with id: {id} not found")
+
+    deleted_post.delete(synchronize_session=False)
+    db.commit()
     return {"messages": "Post successfully deleted"}
 
 
-@app.put("/posts/{id}")
-def update_post(id: int, post: Post):
-    curs.execute("""UPDATE posts SET title = %s, content = %s, published = %s WHERE id = %s RETURNING * """,
-                 (post.title, post.content, post.published, (str(id))))
-    updated_post = curs.fetchone()
-    conn.commit()
-    if not updated_post:
+@app.put("/posts/{id}", response_model=List[CreatePost])
+def update_post(id: int, post: CreatePost, db: Session = Depends(get_db)):
+    updated_post = db.query(models.Post).filter(models.Post.id == id)
+    posts = updated_post.first()
+    if not posts:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Post with id: {id} not found")
 
-    return {"message": "Updated Successfully"}
+    updated_post.update(post.model_dump(), synchronize_session=False)
+
+    db.add(posts)
+    db.commit()
+
+    return [updated_post.first()]
+    # return {"message": "successful"}
