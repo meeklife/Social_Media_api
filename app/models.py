@@ -17,14 +17,12 @@ class Post(Base):
                         nullable=False, server_default=text("now()"))
 
 
-# while True:
-#     try:
-#         conn = psycopg2.connect(host='localhost', database='social_media',
-#                                 user='postgres', password='Systemmind1234', cursor_factory=RealDictCursor)
-#         curs = conn.cursor()
-#         print('Database connection established')
-#         break
-#     except Exception as error:
-#         print('Database connection not established')
-#         print('Error: ', error)
-#         time.sleep(2)
+class User(Base):
+    __tablename__ = 'users'
+
+    id = Column(Integer, nullable=False, primary_key=True)
+    email = Column(String, nullable=False, unique=True)
+    name = Column(String, nullable=False)
+    password = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True),
+                        nullable=False, server_default=text("now()"))

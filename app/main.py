@@ -1,15 +1,16 @@
 from fastapi import FastAPI, HTTPException, status, Depends
+from .utils import hash
 from fastapi.params import Body
 from random import randrange
 from .models import Post
 from . import models
 from .database import engine, SessionLocal, get_db
 from sqlalchemy.orm import Session
-from .schema import PostBase
-from .schema import CreatePost
+from .schema import PostBase, CreatePost, UserBase, CreateUser
 from typing import List
 
 app = FastAPI()
+
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -71,4 +72,34 @@ def update_post(id: int, post: CreatePost, db: Session = Depends(get_db)):
     db.commit()
 
     return [updated_post.first()]
-    # return {"message": "successful"}
+
+
+# Users route methods
+
+@app.get("/users", response_model=List[UserBase])
+def get_users(db: Session = Depends(get_db)):
+    users = db.query(models.User).all()
+    return users
+
+
+@app.post("/users", response_model=List[UserBase])
+def create_user(user: CreateUser, db: Session = Depends(get_db)):
+
+    hashed_password = hash(user.password)
+    user.password = hashed_password
+    new_user = models.User(**user.model_dump())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return [new_user]
+
+
+@app.get("/users/{id}", response_model=UserBase)
+def get_user(id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == id).first()
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"User not found")
+
+    return user
