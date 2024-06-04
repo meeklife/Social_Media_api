@@ -7,6 +7,7 @@ from ..database import get_db
 from typing import List
 from ..utils import hash
 from .. import models
+from ..oauth2 import get_current_user
 from sqlalchemy.orm import Session
 
 router = APIRouter(
@@ -22,7 +23,7 @@ def get_posts(db: Session = Depends(get_db)):
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=List[CreatePost])
-def create_post(post: CreatePost, db: Session = Depends(get_db)):
+def create_post(post: CreatePost, db: Session = Depends(get_db), get_current_user: int = Depends(get_current_user)):
     # new_post = models.Post(
     #     title=post.title, content=post.content)
     new_post = models.Post(**post.model_dump())

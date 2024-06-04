@@ -17,14 +17,14 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
 
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='Invalid credentials')
+            status_code=status.HTTP_403_FORBIDDEN, detail='Invalid credentials')
 
     verified_password = verify_password(
         user_credentials.password, user.password)
 
     if not verified_password:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='Invalid credentials')
+            status_code=status.HTTP_403_FORBIDDEN, detail='Invalid credentials')
 
     access_token = create_access_token(data={"user_id": user.id})
 
