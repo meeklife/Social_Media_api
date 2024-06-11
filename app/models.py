@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from .database import Base
-from sqlalchemy import Boolean, Integer, String, Column, ForeignKey
+from sqlalchemy import Boolean, Integer, String, Column, ForeignKey, orm
 from sqlalchemy.sql.expression import Null, text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
 
@@ -15,6 +15,10 @@ class Post(Base):
     published = Column(Boolean, server_default="True", nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text("now()"))
+    owner_id = Column(Integer, ForeignKey(
+        "users.id", ondelete="CASCADE"), nullable=False)
+
+    owner = orm.relationship("User")
 
 
 class User(Base):

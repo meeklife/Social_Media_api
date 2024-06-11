@@ -3,15 +3,10 @@ from datetime import datetime
 from typing import Optional
 
 
-class PostBase(BaseModel):
+class CreatePost(BaseModel):
     title: str
     content: str
 
-    class Config:
-        from_attributes = True
-
-
-class CreatePost(PostBase):
     class Config:
         from_attributes = True
 
@@ -51,8 +46,18 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    id: Optional[str] = None
-    created_at: datetime
+    id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class PostBase(BaseModel):
+    id: int
+    title: str
+    content: str
+    owner_id: int
+    owner: UserBase
 
     class Config:
         from_attributes = True
