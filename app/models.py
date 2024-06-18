@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from .database import Base
+from app.database import Base
 from sqlalchemy import Boolean, Integer, String, Column, ForeignKey, orm
 from sqlalchemy.sql.expression import Null, text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
@@ -30,3 +30,11 @@ class User(Base):
     password = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text("now()"))
+
+
+class Votes(Base):
+    __tablename__ = 'votes'
+    post_id = Column(Integer, ForeignKey(
+        "post.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(Integer, ForeignKey(
+        "users.id", ondelete="CASCADE"), primary_key=True)

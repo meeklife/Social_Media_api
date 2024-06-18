@@ -1,6 +1,7 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional
+from typing_extensions import Annotated
 
 
 class CreatePost(BaseModel):
@@ -58,6 +59,14 @@ class PostBase(BaseModel):
     content: str
     owner_id: int
     owner: UserBase
+
+    class Config:
+        from_attributes = True
+
+
+class Vote(BaseModel):
+    post_id: int
+    dir: Annotated[int, Field(strict=True, le=1)]
 
     class Config:
         from_attributes = True

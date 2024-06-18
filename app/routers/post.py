@@ -1,12 +1,12 @@
 from fastapi import FastAPI, HTTPException, status, Depends, APIRouter
 from fastapi.params import Body
 from random import randrange
-from ..models import Post
-from ..schema import PostBase, CreatePost
-from ..database import get_db
-from typing import List
-from ..utils import hash
-from .. import models
+from app.models import Post
+from app.schema import PostBase, CreatePost
+from app.database import get_db
+from typing import List, Optional
+from app.utils import hash
+from app import models
 from app.oauth2 import get_current_user
 from sqlalchemy.orm import Session
 
@@ -17,8 +17,9 @@ router = APIRouter(
 
 
 @router.get("/", response_model=List[PostBase])
-def get_posts(db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
-    posts = db.query(models.Post).all()
+def get_posts(db: Session = Depends(get_db), current_user: int = Depends(get_current_user), limit: int = 10, skip: int = 0, search: Optional[str] = ''):
+    posts = db.query(models.Post).filter(
+        models.Post.title.contains(search)).limit(limit).offset(skip).all()
     return posts
 
 
