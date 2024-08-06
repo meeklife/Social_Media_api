@@ -70,3 +70,10 @@ class Vote(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PostVoteView(PostBase):
+    votes: int
+
+    class Config:
+        from_attributes = True
